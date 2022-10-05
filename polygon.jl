@@ -1,7 +1,142 @@
 using BlackBoxOptim, Optim
 println("There are ", Threads.nthreads(), " threads active.")
-global n
-n = 3
+println("Simulation launched. Searching for input text file...")
+global parameters
+parameters = Any[]
+function optimizer(n)
+    (n == 1 || n == "separable nes") && return :separable_nes
+    (n == 2 || n == "xnes") && return :xnes
+    (n == 3 || n == "dxnes") && return :dxnes
+    (n == 4 || n == "adaptive de rand 1 bin") && return :adaptive_de_rand_1_bin
+    (n == 5 || n == "adaptive de rand 1 bin radiuslimited") && return :adaptive_de_rand_1_bin_radiuslimited
+    (n == 6 || n == "de rand 1 bin") && return :de_rand_1_bin
+    (n == 7 || n == "de rand 1 bin radiuslimited") && return :de_rand_1_bin_radiuslimited
+    (n == 8 || n == "de rand 2 bin") && return :de_rand_2_bin
+   (n == 9 || n == "de rand 2 bin radiuslimited") && return :de_rand_2_bin_radiuslimited
+   (n == 10 || n == "generating set search") && return :generating_set_search
+   (n == 11 || n == "probabilistic descent") && return :probabilistic_descent
+   (n == 12 || n == "resampling memetic search") && return :resampling_memetic_search
+   (n == 13 || n == "resampling inheritance memetic search") && return :resampling_inheritance_memetic_search
+   (n == 14 || n == "simultaneous perturbation stochastic approximation") && return :simultaneous_perturbation_stochastic_approximation
+   return :random_search
+end
+function output_level(n)
+    n == 2 && return :verbose
+    n == 1 && return :compact
+    return :silent
+end
+function grab(x)
+    b = x
+    try
+        b = parse(Int, x)
+    catch
+        try
+            b = parse(Float64, x)
+        catch
+            b = b
+        end
+    end
+    return b
+end
+parameter_texts = ["Number of sides", # Line 1
+                   "Number of points", # Line 2
+                   "Avg. Dist. Extrema Max Iterations", # Line 3
+                   "Avg. Dist. Extrema Selected Max Time", # Line 4
+                   "Avg. Dist. Extrema Selected Method", # Line 5
+                   "Avg. Dist. Extrema Convergence Tolerance", # Line 6
+                   "Avg. Dist. Extrema Console Output Level", # Line 7
+                   "Point Location Max Iterations", # Line 8
+                   "Point Location Max Time", # Line 9
+                   "Point Location Temperature Drop", # Line 10
+                   "Point Location Boundary Shrink", # Line 11
+                   "Point Location Past Best Point Memory Amount", # Line 12
+                   "Point Location Convergence Tolerance", # Line 13
+                   "Point Location Console Output Level"] # Line 14
+
+parameter_types = ["(Int > 2)",
+                   "(Int)",
+                   "(Int)",
+                   "(Float)",
+                   "(Int)",
+                   "(Float)",
+                   "(0 - Silent, 1 - Compact, 2 - Verbose)",
+                   "(Int)",
+                   "(Float)",
+                   "(Int)",
+                   "(Int)",
+                   "(Int)",
+                   "(Float)",
+                   "(0 - Silent, 1 - Compact, 2 - Normal, 3 - Verbose)"]
+
+try
+    saved = open("inputs.txt")
+    a = readline(saved)
+    while length(a) > 0 && length(parameters) < length(parameter_texts)
+        b = grab(a)
+
+        push!(parameters, b)
+        a = readline(saved)
+    end
+    if length(parameters) != length(parameter_texts)
+        throw(DimensionMismatch(["Too many or not enough saved parameters."]))
+    end
+    println("\nSaved parameters found:\n")
+    for i = 1:length(parameters)
+        if i != 5 && i != 7
+            println(parameter_texts[i], ": ", parameters[i])
+        elseif i == 5
+            println(parameter_texts[i], ": ", optimizer(parameters[i]))
+        elseif i == 7
+            println(parameter_texts[i], ": ", output_level(parameters[i]))
+        end
+    end
+    println("To continue with these settings, leave the input blank and hit enter. Otherwise, type anything and hit enter.")
+    a = readline(stdin)
+    if length(a) > 0
+        throw(SystemError[])
+    end
+catch
+    println("Please fill out simulation details:\n")
+    for i = 1:length(parameter_texts)
+        if i != 5
+            print(parameter_texts[i], " ", parameter_types[i], ": ")
+        elseif i == 5
+            println(" ")
+            for j = 1:1:14
+                println(j, " - ", optimizer(j))
+            end
+            print("\n", parameter_texts[i], " ", parameter_types[i], ": ")
+        end
+        a = readline(stdin)
+        b = grab(a)
+        while i == 1 && (typeof(b) != Int || b < 3)
+            println("\nPlease type an integer greater than 2.")
+            print(parameter_texts[i], " ", parameter_types[i], ": ")
+            a  = readline(stdin)
+            b = grab(a)
+        end
+        while (i == 2 || i == 3 || i == 5 || i == 7 || i == 8 || i == 10 || i == 11 || i == 12 || i == 14) && typeof(b) != Int
+            println("\nPlease type an integer (no decimal points).")
+            print(parameter_texts[i], " ", parameter_types[i], ": ")
+            a  = readline(stdin)
+            b = grab(a)
+        end
+        while (i == 4 || i == 6 || i == 9 || i == 13) && supertype(typeof(b)) != AbstractFloat
+            println("\nPlease type a float (has decimal points).")
+            print(parameter_texts[i], " ", parameter_types[i], ": ")
+            a  = readline(stdin)
+            b = grab(a)
+            println(typeof(b))
+            println(supertype(typeof(b)))
+        end
+    end
+end
+println("Saving settings...")
+a = open("test.txt", write=true) do io
+    for entry in parameters
+        println(io, entry)
+    end
+end
 
 function magic_number(x)
     toReturn = 0.0
@@ -30,7 +165,8 @@ function find_diameter(n)
 end
 
 function param(x)
-    global n
+    global parameters
+    n = parameters[1]
     pin = π/n
     x_f = 2*floor(x*n)+1
     return (1-cos(pin)*cos(pin*x_f)+(2*x*n-x_f)*sin(pin)*sin(pin*x_f), cos(pin)*sin(pin*x_f)+(2*x*n-x_f)*sin(pin)*cos(pin*x_f))
@@ -41,26 +177,26 @@ function dist(x)
 end
 
 function find_max(points)
+    global parameters
     function avg_dist(z)
         return -1.0*sum(dist([z[1], entry]) for entry in points)/length(points)
     end
-    results = bboptimize(avg_dist, zeros(1).+0.5; SearchRange = (0.0, 1.0), NumDimensions=1, MaxSteps=5000, MaxTime=0.0, Method=:xnes, TraceMode=:silent)
+    results = bboptimize(avg_dist, zeros(1).+0.5; SearchRange = (0.0, 1.0), NumDimensions=1, MaxSteps=parameters[3], MaxTime=parameters[4], Method=optimizer(parameters[5]), FitnessTolerance=parameters[6], TraceMode=output_level(parameters[7]))
     return -1*best_fitness(results)
 end
 
 function find_min(points)
+    global parameters
     function avg_dist(z)
         return sum(dist([z[1], entry]) for entry in points)/length(points)
     end
-    results = bboptimize(avg_dist, zeros(1).+0.5; SearchRange = (0.0, 1.0), NumDimensions=1, MaxSteps=5000, MaxTime=0.0, Method=:xnes, TraceMode=:silent)
+    results = bboptimize(avg_dist, zeros(1).+0.5; SearchRange = (0.0, 1.0), NumDimensions=1, MaxSteps=parameters[3], MaxTime=parameters[4], Method=optimizer(parameters[5]), FitnessTolerance=parameters[6], TraceMode=output_level(parameters[7]))
     return -1*best_fitness(results)
 end
 
-
-lower = zeros(3)
+lower = zeros(parameters[2])
 upper = copy(lower).+1.0
 initial_x = copy(lower).+0.5
-results = Any[0.0 for i = 1:Threads.nthreads()]
 timepassed = Any[0.0 for i = 1:Threads.nthreads()]
 thisthread = Any[0 for i = 1:Threads.nthreads()]
 
@@ -97,33 +233,55 @@ function callbackmin(x)
     return false
 end
 
-@sync begin
-    global updating
-    Threads.@threads for i = 1:Threads.nthreads()
-        timepassed[i] = time()
-        thisthread[i] = Threads.threadid()
-        println("Thread ", Threads.threadid(), " has started.")
-        temp_drop = 3
-        width_drop = 4
-        epsilon = 5
-        verbos = 3
-        iteration = 10000
-        tolerance = 1e-5
-        if i <= floor(Threads.nthreads()/2)
-        results[i] = optimize(find_max, lower, upper, initial_x,
-                              SAMIN(nt=temp_drop, ns= width_drop, neps=epsilon, verbosity=verbos),
-                              Optim.Options(callback=callbackmax, allow_f_increases=true, successive_f_tol=100, g_tol=tolerance, iterations=iteration, show_trace=false))
-        else
-        results[i] = optimize(find_min, lower, upper, initial_x,
-                            SAMIN(nt=temp_drop, ns= width_drop, neps=epsilon, verbosity=verbos),
-                            Optim.Options(callback=callbackmin, allow_f_increases=true, successive_f_tol=100, g_tol=tolerance, iterations=iteration, show_trace=false))
+if Threads.nthreads() > 1
+    results = Any[0.0 for i = 1:Threads.nthreads()]
+    @sync begin
+        global updating
+        global parameters
+        Threads.@threads for i = 1:Threads.nthreads()
+            timepassed[i] = time()
+            thisthread[i] = Threads.threadid()
+            println("Thread ", Threads.threadid(), " has started.")
+            temp_drop = parameters[10]
+            width_drop = parameters[11]
+            epsilon = parameters[12]
+            verbos = parameters[14]
+            iteration = parameters[8]
+            tolerance = parameters[13]
+            if i <= floor(Threads.nthreads()/2)
+            results[i] = optimize(find_max, lower, upper, initial_x,
+                                SAMIN(nt=temp_drop, ns= width_drop, neps=epsilon, verbosity=verbos),
+                                Optim.Options(time_limit=parameters[9], callback=callbackmax, allow_f_increases=true, successive_f_tol=100, g_tol=tolerance, iterations=iteration, show_trace=false))
+            else
+            results[i] = optimize(find_min, lower, upper, initial_x,
+                                SAMIN(nt=temp_drop, ns= width_drop, neps=epsilon, verbosity=verbos),
+                                Optim.Options(time_limit=parameters[9], callback=callbackmin, allow_f_increases=true, successive_f_tol=100, g_tol=tolerance, iterations=iteration, show_trace=false))
+            end
+            timepassed[i] = time()-timepassed[i]
+            println("Thread ", Threads.threadid(), " has finished after ", timepassed[i], " seconds.")
+            updating = false
         end
-        timepassed[i] = time()-timepassed[i]
-        println("Thread ", Threads.threadid(), " has finished after ", timepassed[i], " seconds.")
-        updating = false
     end
+else
+    println("Calculation has started.")
+    results = Any[0.0 for i = 1:2]
+    timepassed[1] = time()
+    thisthread[1] = 1
+    temp_drop = parameters[10]
+    width_drop = parameters[11]
+    epsilon = parameters[12]
+    verbos = parameters[14]
+    iteration = parameters[8]
+    tolerance = parameters[13]
+    results[1] = optimize(find_max, lower, upper, initial_x,
+                        SAMIN(nt=temp_drop, ns= width_drop, neps=epsilon, verbosity=verbos),
+                        Optim.Options(time_limit=parameters[9], callback=callbackmax, allow_f_increases=true, successive_f_tol=100, g_tol=tolerance, iterations=iteration, show_trace=false))
+    results[2] = optimize(find_min, lower, upper, initial_x,
+                        SAMIN(nt=temp_drop, ns= width_drop, neps=epsilon, verbosity=verbos),
+                        Optim.Options(time_limit=parameters[9], callback=callbackmin, allow_f_increases=true, successive_f_tol=100, g_tol=tolerance, iterations=iteration, show_trace=false))
+    timepassed[1] = time()-timepassed[1]
+    println("Calculation finished after ", timepassed[1], " seconds.")
 end
-
 println(" ")
 for i = 1:Threads.nthreads()
     println(" ")
@@ -141,8 +299,8 @@ end
 println(" ")
 println("Upper Bound = ", upper_bound)
 println("Lower Bound = ", lower_bound)
-print("Target Result = ", magic_number(n)*find_diameter(n))
-if upper_bound >= magic_number(n)*find_diameter(n) && magic_number(n)*find_diameter(n) >= lower_bound
+print("Target Result = ", magic_number(parameters[1])*find_diameter(parameters[1]))
+if upper_bound >= magic_number(parameters[1])*find_diameter(parameters[1]) && magic_number(parameters[1])*find_diameter(parameters[1]) >= lower_bound
     println(", which is successfully inside of our interval!")
 else
     println(", which is not inside of our interval.")
