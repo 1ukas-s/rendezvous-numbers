@@ -3,7 +3,8 @@ println("There are ", Threads.nthreads(), " threads active.")
 println("Simulation launched. Searching for input text file...")
 global parameters
 parameters = Any[]
-function optimizer(n)
+
+function optimizer(n) # A function which outputs an optimizer as a result of user input.
     (n == 1 || n == "separable nes") && return :separable_nes
     (n == 2 || n == "xnes") && return :xnes
     (n == 3 || n == "dxnes") && return :dxnes
@@ -20,12 +21,14 @@ function optimizer(n)
    (n == 14 || n == "simultaneous perturbation stochastic approximation") && return :simultaneous_perturbation_stochastic_approximation
    return :random_search
 end
-function output_level(n)
+
+function output_level(n) # Takes user input and outputs an option for console logging during optimization.
     n == 2 && return :verbose
     n == 1 && return :compact
     return :silent
 end
-function grab(x)
+
+function grab(x) # Takes saved data/user input and correctly changes its type.
     b = x
     try
         b = parse(Int, x)
@@ -68,7 +71,7 @@ parameter_types = ["(Int > 2)",
                    "(Float)",
                    "(0 - Silent, 1 - Compact, 2 - Normal, 3 - Verbose)"]
 
-try
+try # This entire try statement just loads saved data/user input.
     saved = open("inputs.txt")
     a = readline(saved)
     while length(a) > 0 && length(parameters) < length(parameter_texts)
@@ -129,16 +132,17 @@ catch
             println(typeof(b))
             println(supertype(typeof(b)))
         end
+        parameters[i] = b
     end
 end
 println("Saving settings...")
-a = open("test.txt", write=true) do io
+a = open("inputs.txt", write=true) do io
     for entry in parameters
-        println(io, entry)
+        println(io, string(entry))
     end
 end
 
-function magic_number(x)
+function magic_number(x) # Calculates the magic number of a regular polygon for comparison to optimizer's results.
     toReturn = 0.0
     if x%2 == 0
         for k = 0:x-1
@@ -154,7 +158,7 @@ function magic_number(x)
     return toReturn
 end
 
-function find_diameter(n)
+function find_diameter(n) # Finds the diameter of a regular polygon using symmetries.
     if n%2 == 0
         return 2.0
     end
@@ -164,7 +168,7 @@ function find_diameter(n)
     return sqrt((1-cos((2*π*x_b-2*π)/n)*(1-x_a)-cos((2*π*x_b)/n)*x_a)^2 + (sin((2*π*x_b-2*π)/n)*(1-x_a)+sin((2*π*x_b)/n)*x_a)^2)
 end
 
-function param(x)
+function param(x) # Parameterizes the unit interval into a regular polygon.
     global parameters
     n = parameters[1]
     pin = π/n
@@ -172,46 +176,46 @@ function param(x)
     return (1-cos(pin)*cos(pin*x_f)+(2*x*n-x_f)*sin(pin)*sin(pin*x_f), cos(pin)*sin(pin*x_f)+(2*x*n-x_f)*sin(pin)*cos(pin*x_f))
 end
 
-function dist(x)
+function dist(x) # Finds the euclidean distance of two points on the unit interval after paramaterization above.
     return sqrt((param(x[1])[1]-param(x[2])[1])^2+(param(x[1])[2]-param(x[2])[2])^2)
 end
 
-function find_max(points)
+function find_max(points) # Finds the maximum of the range of the average distance function.
     global parameters
-    function avg_dist(z)
+    function avg_dist(z) # Defines the local average distance function (necessary due to how the optimizer takes inputs).
         return -1.0*sum(dist([z[1], entry]) for entry in points)/length(points)
     end
     results = bboptimize(avg_dist, zeros(1).+0.5; SearchRange = (0.0, 1.0), NumDimensions=1, MaxSteps=parameters[3], MaxTime=parameters[4], Method=optimizer(parameters[5]), FitnessTolerance=parameters[6], TraceMode=output_level(parameters[7]))
     return -1*best_fitness(results)
 end
 
-function find_min(points)
+function find_min(points) # Finds the minimum of the range of the average distance function.
     global parameters
-    function avg_dist(z)
+    function avg_dist(z) # Local avg distance function.
         return sum(dist([z[1], entry]) for entry in points)/length(points)
     end
     results = bboptimize(avg_dist, zeros(1).+0.5; SearchRange = (0.0, 1.0), NumDimensions=1, MaxSteps=parameters[3], MaxTime=parameters[4], Method=optimizer(parameters[5]), FitnessTolerance=parameters[6], TraceMode=output_level(parameters[7]))
     return -1*best_fitness(results)
 end
 
-lower = zeros(parameters[2])
-upper = copy(lower).+1.0
-initial_x = copy(lower).+0.5
-timepassed = Any[0.0 for i = 1:Threads.nthreads()]
-thisthread = Any[0 for i = 1:Threads.nthreads()]
+lower = zeros(parameters[2]) # Our lower bounds are always zero. The number of points determines the vector length.
+upper = copy(lower).+1.0 # Upper bounds are always 1.
+initial_x = copy(lower).+0.5 # Initial point locations. An educated guess might determine how we initialize points.
+timepassed = Any[0.0 for i = 1:Threads.nthreads()] # Measure computer time for benchmarking.
+thisthread = Any[0 for i = 1:Threads.nthreads()] # For benchmarking purposes.
 
-upper_bound = Inf
-lower_bound = -Inf
-updating = true
-function callbackmax(x)
+upper_bound = Inf # The upper bound should shrink and shrink, so initialize at infinity.
+lower_bound = -Inf # Likewise.
+updating = true # Determines when to tell other threads to stop computing.
+function callbackmax(x) # Determines when to tell other threads to stop computing.
     global upper_bound
     global lower_bound
     global updating
     if x.value < upper_bound && x.value > lower_bound && updating == true
-        upper_bound = x.value
+        upper_bound = x.value # If we've shrunk the upper bound, update the variable.
     elseif updating == false
         return true
-    elseif x.value <= lower_bound
+    elseif x.value <= lower_bound # However, if we've gone below the lower bound, halt computation.
         updating = false
         return true
     end
@@ -223,19 +227,19 @@ function callbackmin(x)
     global lower_bound
     global updating
     if -x.value > lower_bound && -x.value < upper_bound && updating == true
-        lower_bound = -x.value
+        lower_bound = -x.value # If we've raised the lower bound, update.
     elseif updating == false
         return true
-    elseif -x.value >= upper_bound
+    elseif -x.value >= upper_bound # Likewise, stop if we've passed the upper bound.
         updating = false
         return true
     end
     return false
 end
 
-if Threads.nthreads() > 1
+if Threads.nthreads() > 1 # Do parallel computation if we're allowed more than one thread.
     results = Any[0.0 for i = 1:Threads.nthreads()]
-    @sync begin
+    @sync begin # Don't leave this block until all threads are finished.
         global updating
         global parameters
         Threads.@threads for i = 1:Threads.nthreads()
@@ -248,7 +252,7 @@ if Threads.nthreads() > 1
             verbos = parameters[14]
             iteration = parameters[8]
             tolerance = parameters[13]
-            if i <= floor(Threads.nthreads()/2)
+            if i <= floor(Threads.nthreads()/2) # Split computation of mins/maxs evenly. When (god knows why) we have an odd # of threads, do 1 more minimum calc. No particular reason.
             results[i] = optimize(find_max, lower, upper, initial_x,
                                 SAMIN(nt=temp_drop, ns= width_drop, neps=epsilon, verbosity=verbos),
                                 Optim.Options(time_limit=parameters[9], callback=callbackmax, allow_f_increases=true, successive_f_tol=100, g_tol=tolerance, iterations=iteration, show_trace=false))
@@ -262,7 +266,7 @@ if Threads.nthreads() > 1
             updating = false
         end
     end
-else
+else # when we only have one thread, do both calculations in sequence.
     println("Calculation has started.")
     results = Any[0.0 for i = 1:2]
     timepassed[1] = time()
@@ -283,7 +287,7 @@ else
     println("Calculation finished after ", timepassed[1], " seconds.")
 end
 println(" ")
-for i = 1:Threads.nthreads()
+for i = 1:Threads.nthreads() # Print out the results of our calculations, some benchmarking, and comparison to known value.
     println(" ")
     print("Results for thread ", thisthread[i])
     if i <= floor(Threads.nthreads()/2)
