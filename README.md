@@ -1,5 +1,6 @@
 # rendezvous-numbers
 Using optimizers to find rendezvous numbers of certain metric spaces.
+To use, you must install Julia and use pkg to install Optim and BlackBoxOptim. From there, download the script and modify the parameters to your liking.
 We utilize Optim.jl and BlackBoxOptim.jl in this script, whose licenses can be found below:
 
 
