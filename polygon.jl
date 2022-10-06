@@ -279,10 +279,10 @@ else # when we only have one thread, do both calculations in sequence.
     tolerance = parameters[13]
     results[1] = optimize(find_max, lower, upper, initial_x,
                         SAMIN(nt=temp_drop, ns= width_drop, neps=epsilon, verbosity=verbos),
-                        Optim.Options(time_limit=parameters[9], callback=callbackmax, allow_f_increases=true, successive_f_tol=100, g_tol=tolerance, iterations=iteration, show_trace=true))
+                        Optim.Options(time_limit=parameters[9], callback=callbackmax, allow_f_increases=true, successive_f_tol=100, g_tol=tolerance, iterations=iteration, show_trace=false))
     results[2] = optimize(find_min, lower, upper, initial_x,
                         SAMIN(nt=temp_drop, ns= width_drop, neps=epsilon, verbosity=verbos),
-                        Optim.Options(time_limit=parameters[9], callback=callbackmin, allow_f_increases=true, successive_f_tol=100, g_tol=tolerance, iterations=iteration, show_trace=true))
+                        Optim.Options(time_limit=parameters[9], callback=callbackmin, allow_f_increases=true, successive_f_tol=100, g_tol=tolerance, iterations=iteration, show_trace=false))
     timepassed[1] = time()-timepassed[1]
     println("Calculation finished after ", timepassed[1], " seconds.")
 end
