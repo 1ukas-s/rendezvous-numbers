@@ -185,7 +185,7 @@ function find_max(points) # Finds the maximum of the range of the average distan
     function avg_dist(z) # Defines the local average distance function (necessary due to how the optimizer takes inputs).
         return -1.0*sum(dist([z[1], entry]) for entry in points)/length(points)
     end
-    results = bboptimize(avg_dist, zeros(1).+0.5; SearchRange = (0.0, 1.0), NumDimensions=1, MaxSteps=parameters[3], MaxTime=parameters[4], Method=optimizer(parameters[5]), FitnessTolerance=parameters[6], TraceMode=output_level(parameters[7]))
+    results = bboptimize(avg_dist, zeros(1).+0.5; SearchRange = (0.0, 1.0), NumDimensions=1, MaxSteps=parameters[3], MaxTime=parameters[4], Method=optimizer(parameters[5]), TraceMode=output_level(parameters[7]))
     return -1*best_fitness(results)
 end
 
@@ -194,7 +194,7 @@ function find_min(points) # Finds the minimum of the range of the average distan
     function avg_dist(z) # Local avg distance function.
         return sum(dist([z[1], entry]) for entry in points)/length(points)
     end
-    results = bboptimize(avg_dist, zeros(1).+0.5; SearchRange = (0.0, 1.0), NumDimensions=1, MaxSteps=parameters[3], MaxTime=parameters[4], Method=optimizer(parameters[5]), FitnessTolerance=parameters[6], TraceMode=output_level(parameters[7]))
+    results = bboptimize(avg_dist, zeros(1).+0.5; SearchRange = (0.0, 1.0), NumDimensions=1, MaxSteps=parameters[3], MaxTime=parameters[4], Method=optimizer(parameters[5]), TraceMode=output_level(parameters[7]))
     return -1*best_fitness(results)
 end
 
@@ -250,16 +250,16 @@ if Threads.nthreads() > 1 # Do parallel computation if we're allowed more than o
             width_drop = parameters[11]
             epsilon = parameters[12]
             verbos = parameters[14]
-            iteration = parameters[8]
+            itera = parameters[8]
             tolerance = parameters[13]
             if i <= floor(Threads.nthreads()/2) # Split computation of mins/maxs evenly. When (god knows why) we have an odd # of threads, do 1 more minimum calc. No particular reason.
             results[i] = optimize(find_max, lower, upper, initial_x,
                                 SAMIN(nt=temp_drop, ns= width_drop, neps=epsilon, verbosity=verbos),
-                                Optim.Options(time_limit=parameters[9], callback=callbackmax, allow_f_increases=true, successive_f_tol=100, g_tol=tolerance, iterations=iteration, show_trace=false))
+                                Optim.Options(callback=callbackmax, allow_f_increases=true, successive_f_tol=100, g_tol=tolerance, iterations=itera, show_trace=false))
             else
             results[i] = optimize(find_min, lower, upper, initial_x,
                                 SAMIN(nt=temp_drop, ns= width_drop, neps=epsilon, verbosity=verbos),
-                                Optim.Options(time_limit=parameters[9], callback=callbackmin, allow_f_increases=true, successive_f_tol=100, g_tol=tolerance, iterations=iteration, show_trace=false))
+                                Optim.Options(callback=callbackmin, allow_f_increases=true, successive_f_tol=100, g_tol=tolerance, iterations=itera, show_trace=false))
             end
             timepassed[i] = time()-timepassed[i]
             println("Thread ", Threads.threadid(), " has finished after ", timepassed[i], " seconds.")
@@ -279,10 +279,10 @@ else # when we only have one thread, do both calculations in sequence.
     tolerance = parameters[13]
     results[1] = optimize(find_max, lower, upper, initial_x,
                         SAMIN(nt=temp_drop, ns= width_drop, neps=epsilon, verbosity=verbos),
-                        Optim.Options(time_limit=parameters[9], callback=callbackmax, allow_f_increases=true, successive_f_tol=100, g_tol=tolerance, iterations=iteration, show_trace=false))
+                        Optim.Options(time_limit=parameters[9], callback=callbackmax, allow_f_increases=true, successive_f_tol=100, g_tol=tolerance, iterations=iteration, show_trace=true))
     results[2] = optimize(find_min, lower, upper, initial_x,
                         SAMIN(nt=temp_drop, ns= width_drop, neps=epsilon, verbosity=verbos),
-                        Optim.Options(time_limit=parameters[9], callback=callbackmin, allow_f_increases=true, successive_f_tol=100, g_tol=tolerance, iterations=iteration, show_trace=false))
+                        Optim.Options(time_limit=parameters[9], callback=callbackmin, allow_f_increases=true, successive_f_tol=100, g_tol=tolerance, iterations=iteration, show_trace=true))
     timepassed[1] = time()-timepassed[1]
     println("Calculation finished after ", timepassed[1], " seconds.")
 end
