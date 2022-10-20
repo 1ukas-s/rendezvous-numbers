@@ -4,6 +4,43 @@ println("Simulation launched. Searching for input text file...")
 global parameters
 parameters = Any[]
 
+function save(input_data, output_data, title)
+	if "Data" in readdir()
+		print("File named Data exists, ")
+		try
+			readdir("Data")
+		catch
+			println("but it's not a directory.")
+			println("Please rename or move the file \"Data\" somewhere/something else.")
+		else
+			println("and it is a directory.")
+		end
+	else
+		println("No file named Data exists")
+		mkdir("Data")
+	end
+
+	if length([occursin("outputs", entry) for entry in readdir("Data")]) < 1
+		println("No output files yet.")
+		filename = "Data/outputs_1.txt"
+	else
+		println("There are output files.")
+		# The last (alphabetical order) file with the name
+		#println(readdir("Data")[findall(==(true), [occursin("outputs", entry) for entry in readdir("Data")])[end]])
+
+		# Add 1 to the number and then make it
+		#println(string(1+parse(Int, match(r"[0-9]+", readdir("Data")[findall(==(true), [occursin("outputs", entry) for entry in readdir("Data")])[end]]).match)))
+		filename = string("Data/outputs_", string(1+parse(Int, match(r"[0-9]+", readdir("Data")[findall(==(true), [occursin("outputs", entry) for entry in readdir("Data")])[end]]).match)), ".txt")
+	end
+
+	println("Writing output to ./", filename, ".")
+	a = open(filename, write=true) do io
+		println(io, title)
+		println(io, input_data)
+		println(io, output_data)
+	end
+end
+
 function optimizer(n) # A function which outputs an optimizer as a result of user input.
     (n == 1 || n == "separable nes") && return :separable_nes
     (n == 2 || n == "xnes") && return :xnes
@@ -135,7 +172,12 @@ catch
         parameters[i] = b
     end
 end
-println("Saving settings...")
+input_data = "Input Data:\n"
+println("Saving settings and prepping for writing to output text file...")
+for i = 1:length(parameters)
+    global input_data
+    input_data = input_data * string(parameter_texts[i], "   --   ", parameters[i], "\n")
+end
 a = open("inputs.txt", write=true) do io
     for entry in parameters
         println(io, string(entry))
@@ -237,15 +279,18 @@ function callbackmin(x)
     return false
 end
 
+output_data = "Results:\n"
+
 if Threads.nthreads() > 1 # Do parallel computation if we're allowed more than one thread.
     results = Any[0.0 for i = 1:Threads.nthreads()]
     @sync begin # Don't leave this block until all threads are finished.
         global updating
         global parameters
+        global output_data
         Threads.@threads for i = 1:Threads.nthreads()
             timepassed[i] = time()
             thisthread[i] = Threads.threadid()
-            println("Thread ", Threads.threadid(), " has started.")
+            output_data = output_data * string("Thread ", Threads.threadid(), " has started.\n")
             temp_drop = parameters[10]
             width_drop = parameters[11]
             epsilon = parameters[12]
@@ -262,12 +307,12 @@ if Threads.nthreads() > 1 # Do parallel computation if we're allowed more than o
                                 Optim.Options(callback=callbackmin, allow_f_increases=true, successive_f_tol=100, g_tol=tolerance, iterations=itera, show_trace=false))
             end
             timepassed[i] = time()-timepassed[i]
-            println("Thread ", Threads.threadid(), " has finished after ", timepassed[i], " seconds.")
+            output_data = output_data * string("Thread ", Threads.threadid(), " has finished after ", timepassed[i], " seconds.\n")
             updating = false
         end
     end
 else # when we only have one thread, do both calculations in sequence.
-    println("Calculation has started.")
+    output_data = output_data * string("Calculation has started.\n")
     results = Any[0.0 for i = 1:2]
     timepassed[1] = time()
     thisthread[1] = 1
@@ -284,28 +329,31 @@ else # when we only have one thread, do both calculations in sequence.
                         SAMIN(nt=temp_drop, ns= width_drop, neps=epsilon, verbosity=verbos),
                         Optim.Options(time_limit=parameters[9], callback=callbackmin, allow_f_increases=true, successive_f_tol=100, g_tol=tolerance, iterations=iteration, show_trace=false))
     timepassed[1] = time()-timepassed[1]
-    println("Calculation finished after ", timepassed[1], " seconds.")
+    output_data = output_data * string("Calculation finished after ", timepassed[1], " seconds.\n")
 end
-println(" ")
+output_data = output_data * "\n"
 for i = 1:Threads.nthreads() # Print out the results of our calculations, some benchmarking, and comparison to known value.
-    println(" ")
-    print("Results for thread ", thisthread[i])
+    global output_data
+    output_data = output_data * "\n"
+    output_data = output_data * string("Results for thread ", thisthread[i])
     if i <= floor(Threads.nthreads()/2)
-        println(", minimizing the maximum.")
+        output_data = output_data * string(", minimizing the maximum.\n")
     else
-        println(", maximizing the minimum.")
+        output_data = output_data * string(", maximizing the minimum.")
     end
-    println("Points (interval): ", Optim.minimizer(results[i]))
-    println("Points (space): ", [param(x) for x in Optim.minimizer(results[i])])
-    println("Value: ", abs(Optim.minimum(results[i])))
-    println("Seconds taken to calculate: ", timepassed[i])
+    output_data = output_data * string("Points (interval): ", Optim.minimizer(results[i]), "\n")
+    output_data = output_data * string("Points (space): ", [param(x) for x in Optim.minimizer(results[i])], "\n")
+    output_data = output_data * string("Value: ", abs(Optim.minimum(results[i])), "\n")
+    output_data = output_data * string("Seconds taken to calculate: ", timepassed[i], "\n")
 end
-println(" ")
-println("Upper Bound = ", upper_bound)
-println("Lower Bound = ", lower_bound)
-print("Target Result = ", magic_number(parameters[1])*find_diameter(parameters[1]))
+output_data = output_data * "\n"
+output_data = output_data * string("Upper Bound = ", upper_bound, "\n")
+output_data = output_data * string("Lower Bound = ", lower_bound, "\n")
+output_data = output_data * string("Target Result = ", magic_number(parameters[1])*find_diameter(parameters[1]))
 if upper_bound >= magic_number(parameters[1])*find_diameter(parameters[1]) && magic_number(parameters[1])*find_diameter(parameters[1]) >= lower_bound
-    println(", which is successfully inside of our interval!")
+    output_data = output_data * string(", which is successfully inside of our interval!")
 else
-    println(", which is not inside of our interval.")
+    output_data = output_data * string(", which is not inside of our interval.")
 end
+
+save(input_data, output_data, "Polygon Test")
