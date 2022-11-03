@@ -1,0 +1,26 @@
+3
+3
+2500
+0.0
+4
+1.0e-30
+0
+10000
+0.0
+4
+1.0e-20
+2
+
+How to use this file
+Line 1: Number of sides
+Line 2: Number of points
+Line 3: Avg. Dist. Extrema Max Iterations
+Line 4: Avg. Dist. Extrema Selected Max Time
+Line 5: Avg. Dist. Extrema Selected Method
+Line 6: Avg. Dist. Extrema Convergence Tolerance
+Line 7: Avg. Dist. Extrema Console Output Level
+Line 8: Point Location Max Iterations
+Line 9: Point Location Selected Max Time
+Line 10: Point Location Selected Method
+Line 11: Point Location Convergence Tolerance
+Line 12: Point Location Console Output Level
