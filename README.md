@@ -1,6 +1,16 @@
 # rendezvous-numbers
 Using optimizers to find rendezvous numbers of certain metric spaces.
-To use, you must install Julia and use pkg to install Optim and BlackBoxOptim. From there, download the script and modify the parameters to your liking.
+To use, you must install Julia and use pkg to install Optim and BlackBoxOptim.
+Afterward you need to create or input a path to a 'module' script that defines two or three things about a metric space, all wrapped in Distributed.@everywhere:
+   1. param: (0,1)^n -> ℝ^(n+1), which parameterizes the unit interval into n+1 dimensional space.
+   2. dist: (0,1)^2n -> ℝ+, which uses the parameterization to find the distance between two points.
+This script may contain the following functions:
+   3. find_diameter: no input -> ℝ+, a method of calculating the maximum distance between two points in your metric space.
+        If this is not included, optimization will be used to find this value (Must be defined as a function, not a variable).
+   4. magic_number: no input ->  ℝ+, if the magic number has a known formula to compare results with.
+
+Finally, run solver.jl with 3 command line arguments: the number of cores to dedicate, the number of tasks, and the path to the 'module' you want to run. These can be defined during the script's execution by users but not through cluster job managers, so this must be done e.g. 'julia ./solver.jl 4 8 ./modules/reg_polygon.jl' when submitting scripts to cluster job managers.
+   
 We utilize Optim.jl and BlackBoxOptim.jl in this script, whose licenses can be found below:
 
 
