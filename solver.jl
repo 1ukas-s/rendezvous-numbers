@@ -56,8 +56,12 @@ addprocs(tasks*cores)
 println("There are ", tasks*cores, " workers.")
 println("Simulation launched. Searching for input text file...")
 println("View the readme file if you need help with INPUTS.")
-
 include(metric_space_file)
+if @isdefined module_name
+    println("\nUsing module ", module_name)
+else
+    println("\nUsing module ", metric_space_file)
+end
 
 
 Distributed.@everywhere begin
@@ -240,4 +244,9 @@ if @isdefined(magic_number)
     println("\nmagic_number was defined, calculating target value...")
     println("\nTarget Value (Rendezvous): ", magic_number()*diameter)
     println("Target Value (Magic): ", magic_number())
+end
+if @isdefined module_name
+    println("\n\nUsing module ", module_name)
+else
+    println("\n\nUsing module ", metric_space_file)
 end
