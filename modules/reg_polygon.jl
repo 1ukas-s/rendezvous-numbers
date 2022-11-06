@@ -1,16 +1,20 @@
-println("reg_polygon.jl -- by Lukas Stuelke.")
+module_name = "reg_polygon.jl -- by Lukas Stuelke."
 using Distributed
 num_sides = 0
 
-while isa(num_sides, Signed) == false || num_sides < 2
+try
     global num_sides
-    print("Input the number of sides for your regular polygon (Int > 2): ")
-    num_sides = parse(Int, readline(stdin))
+    num_sides = parse(Int, replace(replace(split(ARGS[end])[1],"["=>""),"]"=>""))
+    println(num_sides, " sided regular polygon.")
+catch
+    println("\nPlease make the last argument to the command line a 1-value matrix with the number of sides for your regular polygon, for example julia ./solver.jl 2 6 \'[15]\'")
+    exit()
 end
-
-for i = 2:nworkers()+1
-    global num_sides
-    remotecall_fetch(()->num_sides, i)
+if Distributed.nworkers() > 1
+    for i = 2:nworkers()+1
+        global num_sides
+        remotecall_fetch(()->num_sides, i)
+    end
 end
 
 Distributed.@everywhere begin
