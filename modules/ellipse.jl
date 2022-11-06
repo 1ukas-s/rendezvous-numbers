@@ -1,11 +1,18 @@
-println("ellipse.jl -- by Lukas Stuelke.")
+module_name = "ellipse.jl -- by Lukas Stuelke."
 using Distributed
-height = -1.0
+height = 1.0
 
-while isa(height, Float64) == false || height < 0.0 || height > 1.0
+try
     global height
-    print("Input the height of the ellipse (Float∈[0.0, 1.0]): ")
-    height = parse(Float64, readline(stdin))
+    height = parse(Float64, replace(replace(split(ARGS[end])[1],"["=>""),"]"=>""))
+    println("Ellipse vertical diameter: ", height)
+catch
+    println("\nPlease make the last argument to the command line a 1-value matrix with the height ∈[0, 1] of your ellipse, for example julia ./solver.jl 2 6 \'[0.5]\'")
+    exit()
+end
+if height > 1.0 || height < 0.0
+    println("\nPlease make the last argument to the command line a 1-value matrix with the height ∈[0, 1] of your ellipse, for example julia ./solver.jl 2 6 \'[0.5]\'")
+    exit()
 end
 if Distributed.nworkers() > 1
     for i = 2:nworkers()+1
@@ -15,10 +22,14 @@ if Distributed.nworkers() > 1
 end
 
 Distributed.@everywhere begin
+    function find_diameter(x)
+        return 1.0
+    end
+
     function param(x) # Parameterizes the unit interval into a regular polygon.
         global height
         n = height
-        return (cos(2*pi*x), height*sin(2*pi*x))
+        return (cos(2*pi*x)/2.0, height*sin(2*pi*x)/2.0)
     end
 
     function dist(x) # Finds the euclidean distance of two points on the unit interval after paramaterization above.
