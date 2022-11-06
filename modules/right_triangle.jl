@@ -1,4 +1,4 @@
-println("right_triangle.jl -- by Lukas Stuelke.")
+module_name = "right_triangle.jl -- by Lukas Stuelke."
 using Distributed
 Distributed.@everywhere begin
 	function find_diameter() # Finds the diameter of a regular polygon using symmetries.
