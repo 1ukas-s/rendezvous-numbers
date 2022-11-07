@@ -7,11 +7,11 @@ try
     height = parse(Float64, replace(replace(split(ARGS[end])[1],"["=>""),"]"=>""))
     println("Ellipse vertical diameter: ", height)
 catch
-    println("\nPlease make the last argument to the command line a 1-value matrix with the height ∈[0, 1] of your ellipse, for example julia ./solver.jl 2 6 \'[0.5]\'")
+    println("\nPlease make the last argument to the command line a 1-value matrix with the height ∈[0.0, 1.0] of your ellipse, for example julia ./solver.jl 2 6 \'[0.5]\'")
     exit()
 end
 if height > 1.0 || height < 0.0
-    println("\nPlease make the last argument to the command line a 1-value matrix with the height ∈[0, 1] of your ellipse, for example julia ./solver.jl 2 6 \'[0.5]\'")
+    println("\nPlease make the last argument to the command line a 1-value matrix with the height ∈[0.0, 1.0] of your ellipse, for example julia ./solver.jl 2 6 \'[0.5]\'")
     exit()
 end
 if Distributed.nworkers() > 1
@@ -22,13 +22,12 @@ if Distributed.nworkers() > 1
 end
 
 Distributed.@everywhere begin
-    function find_diameter(x)
+    function find_diameter(x) # Defined to be 1 by our parameterization.
         return 1.0
     end
 
     function param(x) # Parameterizes the unit interval into a regular polygon.
         global height
-        n = height
         return (cos(2*pi*x)/2.0, height*sin(2*pi*x)/2.0)
     end
 
