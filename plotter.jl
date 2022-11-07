@@ -28,18 +28,33 @@ while isfile(metric_space_file) == false || metric_space_file[end-2:end] != ".jl
 end
 println("Metric Space File = ", metric_space_file)
 include(metric_space_file)
-parameter_vals = [n/1000 for n = 0:1000]
+parameter_vals = [n/1000 for n = 0:999]
 x_points = [param(entry)[1] for entry in parameter_vals]
 y_points = [param(entry)[2] for entry in parameter_vals]
-
-plot_title =2
+if length(ARGS) > 1
+    global data_vals
+    data_vals = Float64[]
+    for entry in split(ARGS[2])
+        append!(data_vals, parse(Float64, replace(replace(entry,"["=>""),"]"=>"")))
+    end
+end
 graphic = plot(x_points,
     y_points,
     title=string("Metric Space defined in ", metric_space_file),
     grid=true,
-    gridalpha=0.9,
+    gridalpha=0.5,
     minorgrid=true,
-    minorgridalpha=0.5,
-    linecolor=:red)
+    minorgridalpha=0.25,
+    linecolor=:red,
+    xlims = (-0.1, 1.0),
+    ylims = (-0.1, 1.0),
+    legend = false,
+    lw=2)
+if @isdefined data_vals
+    x_points_data = [param(entry)[1] for entry in data_vals]
+    y_points_data = [param(entry)[2] for entry in data_vals]
+    plot!(graphic, x_points_data, y_points_data, seriestype=:scatter)
+end
+savefig(graphic, "plot.pdf")
 display(graphic)
 readline()
