@@ -6,14 +6,14 @@ height = 1.0
 
 try
     global num_sides, height
-    num_sides = parse(Int, replace(replace(split(ARGS[end])[1],"["=>""),"]"=>""))
-    height = parse(Float64, replace(replace(split(ARGS[end])[2],"["=>""),"]"=>""))
+    num_sides = parse(Int, replace(replace(split(ARGS[end], ",")[1],"["=>""),"]"=>""))
+    height = parse(Float64, replace(replace(split(ARGS[end], ",")[2],"["=>""),"]"=>""))
 catch
-    println("\nPlease make the last argument to the command line a 2-value matrix with the number of sides an Integer > 2, and the height ∈[0.0, 1.0] of your circumelliptical arc, separated without a space. For example, julia ./solver.jl 2 6 \'[12 0.75]\'")
+    println("\nPlease make the last argument to the command line a 2-value matrix with the number of sides an Integer > 2, and the height ∈[0.0, 1.0] of your circumelliptical arc, separated with only a comma. For example, julia ./solver.jl 2 6 \'[12,0.75]\'")
     exit()
 end
 if height > 1.0 || height < 0.0 || num_sides < 2
-    println("\nPlease make the last argument to the command line a 2-value matrix with the number of sides an Integer > 2, and the height ∈[0.0, 1.0] of your circumelliptical arc, separated without a space. For example, julia ./solver.jl 2 6 \'[12 0.75]\'")
+    println("\nPlease make the last argument to the command line a 2-value matrix with the number of sides an Integer > 2, and the height ∈[0.0, 1.0] of your circumelliptical arc, separated with only a comma. For example, julia ./solver.jl 2 6 \'[12,0.75]\'")
     exit()
 end
 println("Stretch value for vertical axis: ", height)
@@ -39,11 +39,12 @@ Distributed.@everywhere begin
         x = (n+n%2)/(2*n)
         x_b = ceil(x*n) # x between: x is this and the next vertex
         x_a = (x*n)%1 # x along: how far is x between them (%)
-        return sqrt(((1-cos((2*π*x_b-2*π)/n)*(1-x_a)-cos((2*π*x_b)/n)*x_a)/2.0)^2 + ((sin((2*π*x_b-2*π)/n)*(1-x_a)+sin((2*π*x_b)/n)*x_a)/2.0)^2)/2.0
+        return sqrt(((1-cos((2*π*x_b-2*π)/n)*(1-x_a)-cos((2*π*x_b)/n)*x_a))^2 + ((sin((2*π*x_b-2*π)/n)*(1-x_a)+sin((2*π*x_b)/n)*x_a))^2)/2.0
     end
 
     function param(x) # Parameterizes the unit interval into a regular polygon.
         global num_sides, height
+        x = x%1.0
         n = num_sides
         pin = π/n
         x_f = 2*floor(x*n)+1
@@ -51,6 +52,8 @@ Distributed.@everywhere begin
     end
 
     function dist(x) # Finds the euclidean distance of two points on the unit interval after paramaterization above.
-        return sqrt((param(x[1])[1]-param(x[2])[1])^2+(param(x[1])[2]-param(x[2])[2])^2)
-    end
+		p1 = param(x[1])
+		p2 = param(x[2])
+		return sqrt((p1[1]-p2[1])^2+(p1[2]-p2[2])^2)
+	end
 end
