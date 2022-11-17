@@ -23,13 +23,13 @@ try
     parameter_2 = parse(Int, replace(replace(split(ARGS[end])[1],"["=>""),"]"=>""))
 
 catch
-    println("\nPlease make the last argument to the command line a 2-value matrix with the height ∈[0.0, 1.0] of your circumelliptical arc, and the number of sides an Integer > 2, separated without a space. For example, julia ./solver.jl 2 6 \'[0.5 5]\'")
+    println("\nPlease make the last argument to the command line a 2-value matrix with the height ∈[0.0, 1.0] of your circumelliptical arc, and the number of sides an Integer > 2, separated without a space. For example: julia ./solver.jl 10 ./modules/example.jl \'[0.5 5]\'")
     exit()
 end
 
 # Here check if the passed inputs are subject to whatever conditions your module needs them to be. Again, error and end the program after printing instructions if not.
 if parameter_1 > 1.0 || parameter_1 < 0.0 || parameter_2 < 2
-    println("\nPlease make the last argument to the command line a 2-value matrix with the height ∈[0.0, 1.0] of your circumelliptical arc, and the number of sides an Integer > 2, separated without a space. For example, julia ./solver.jl 2 6 \'[0.5 5]\'")
+    println("\nPlease make the last argument to the command line a 2-value matrix with the height ∈[0.0, 1.0] of your circumelliptical arc, and the number of sides an Integer > 2, separated without a space. For example, julia ./solver.jl 10 ./modules/example.jl \'[0.5 5]\'")
     exit()
 end
 
@@ -56,15 +56,17 @@ Distributed.@everywhere begin
     # If you know the magic number of your space and want to compare the results with the solver, define it here.
     # This function must not take any arguments. Use globals if you need arguments.
     function magic_number()
-        return 0.0
+        global parameter_1
+        return parameter_1/2 + 0.5          # Example of how to use globals.
     end
 
-    # If the diameter of your space is known beforehand, or there is a simple formula, define it here.
+    # If the diameter of your space can be determined from some formula, define it here.
     # This function must not take any arguments. Use globals if you need arguments.
     # If this is not defined, at the end of script execution for solver.jl, a high precision run through of the metric
     # space will be performed to find the diameter instead. Having this function defined can speed things up.
     function find_diameter()
-        return 1.0
+        global parameter_1, parameter_2
+        return parameter_1*parameter_2          # Example of how to use globals.
     end
 
     # Here is where you define the parameterization of your function.
@@ -79,7 +81,10 @@ Distributed.@everywhere begin
     # Here is where you define the distance function.
     # Programmatically, the only rule that must be followed is that the input is a 1-d array and the output is a float.
     # For relevance to the math, just make sure it's symmetric (x[1] and x[2] could change places without changing the result)
+    # Since the parameterization gives the point as a tuple, you only need to call this once per "point"
     function dist(x)
-        return sqrt((param(x[1])[1]-param(x[2])[1])^2+(param(x[1])[2]-param(x[2])[2])^2)
-    end
+		p1 = param(x[1])
+		p2 = param(x[2])
+		return sqrt((p1[1]-p2[1])^2+(p1[2]-p2[2])^2)
+	end
 end
