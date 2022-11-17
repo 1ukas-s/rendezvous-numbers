@@ -1,6 +1,8 @@
 module_name = "ellipse.jl -- by Lukas Stuelke."
 using Distributed
 height = 1.0
+plotter_xlims = (-0.6, 0.6)
+plotter_ylims = (-0.6, 0.6)
 
 try
     global height
@@ -22,7 +24,7 @@ if Distributed.nworkers() > 1
 end
 
 Distributed.@everywhere begin
-    function find_diameter(x) # Defined to be 1 by our parameterization.
+    function find_diameter() # Defined to be 1 by our parameterization.
         return 1.0
     end
 
