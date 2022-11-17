@@ -27,7 +27,7 @@ end
 try
     global secline_ang2
     secline_ang2 = parse(Float64, replace(replace(split(ARGS[end], ",")[3],"["=>""),"]"=>""))
-    println("The secant slicing line segment has an endpoint at ($(cos(secline_ang1)), $(sin(secline_ang1))) given by angle $(secline_ang1).")
+    println("The secant slicing line segment has an endpoint at ($(cos(secline_ang2)), $(sin(secline_ang2))) given by angle $(secline_ang2).")
 catch
     global secline_ang2
     println("\nPlease make the last argument to the command line a 3-value matrix with the height ratio ∈[0.0, 1.0] of your ellipse and two points on the ellipse which make a secant line ∈[0.0, $(2*pi)] for example julia ./solver.jl 8 \'[0.5,3.14,1.57]\'")
