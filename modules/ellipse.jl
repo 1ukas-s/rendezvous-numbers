@@ -34,6 +34,8 @@ Distributed.@everywhere begin
     end
 
     function dist(x) # Finds the euclidean distance of two points on the unit interval after paramaterization above.
-        return sqrt((param(x[1])[1]-param(x[2])[1])^2+(param(x[1])[2]-param(x[2])[2])^2)
-    end
+		p1 = param(x[1])
+		p2 = param(x[2])
+		return sqrt((p1[1]-p2[1])^2+(p1[2]-p2[2])^2)
+	end
 end
