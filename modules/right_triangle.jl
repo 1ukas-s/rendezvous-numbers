@@ -21,18 +21,20 @@ if Distributed.nworkers() > 1
     end
 end
 Distributed.@everywhere begin
+	global ang, csa, sna, m
+	csa = cos(ang)
+	sna = sin(ang)
+	m = csa+sna+1
 	function find_diameter() # Diameter defined to be 1 by our parameterization below
 		return 1.0
 	end
 
 	function param(a)
-		global ang
-		csa = cos(ang)
-		sna = sin(ang)
-		m = csa+sna+1
-		if a <= 0 || a >= 1
-			toReturn = (0, 0)
-		elseif a <= csa/m
+		global ang, csa, sna, m
+		if a <= 0.0 || a >= 1.0
+			a = a%1.0
+		end
+		if a <= csa/m
 			toReturn = (m*a, 0)
 		elseif a <= (csa+1)/m
 			toReturn = (csa*(1+csa-m*a), sna*(m*a-csa))
@@ -43,6 +45,8 @@ Distributed.@everywhere begin
 	end
 
 	function dist(x) # Finds the euclidean distance of two points on the unit interval after paramaterization above.
-		return sqrt((param(x[1])[1]-param(x[2])[1])^2+(param(x[1])[2]-param(x[2])[2])^2)
+		p1 = param(x[1])
+		p2 = param(x[2])
+		return sqrt((p1[1]-p2[1])^2+(p1[2]-p2[2])^2)
 	end
 end
