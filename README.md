@@ -2,7 +2,7 @@
 Using optimizers to find rendezvous numbers of certain metric spaces.
 To use, you must install Julia and use pkg to install Optim and BlackBoxOptim.
 
-Afterward you need to create or input a path to a 'module' script that defines two or three things about a metric space, all wrapped in Distributed.@everywhere:
+Afterward you need to create or input a path to a 'module' script that defines two required and up to two optional things about a metric space, all wrapped in Distributed.@everywhere:
    1. param: (0,1)^n -> ℝ^(n+1), which parameterizes the unit interval into n+1 dimensional space.
    2. dist: (0,1)^2n -> ℝ+, which uses the parameterization to find the distance between two points.
 This script may contain the following functions:
